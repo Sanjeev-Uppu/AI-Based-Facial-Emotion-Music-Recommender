@@ -11,16 +11,16 @@ export default function App() {
   useEffect(() => {
     if (!emotion) return;
 
-    // 🔹 Normalize emotion before sending to backend
+    // Normalize emotion name for backend
     const normalizedEmotion =
       emotion === "surprised" ? "surprise" : emotion;
 
     axios
-      .post("http://localhost:8000/recommend", {
+      .post(`${process.env.REACT_APP_API_URL}/recommend`, {
         emotion: normalizedEmotion,
       })
       .then((res) => {
-        setSongs(res.data.songs);
+        setSongs(res.data.songs || []);
       })
       .catch((err) => {
         console.error("Error fetching songs:", err);
@@ -32,17 +32,16 @@ export default function App() {
     <div className="container">
       <h1>Emotion-Based Music Recommendation</h1>
 
-      {/* Camera detects raw emotion from face-api.js */}
+      {/* Camera detects facial emotion */}
       <Camera onEmotion={setEmotion} />
 
-      {/* Display emotion (UI-friendly formatting handled inside component) */}
+      {/* Show detected emotion */}
       {emotion && <EmotionCard emotion={emotion} />}
 
-      {/* Render recommended songs */}
-      {songs.length > 0 &&
-        songs.map((song, index) => (
-          <SongCard key={index} song={song} />
-        ))}
+      {/* Show recommended songs */}
+      {songs.map((song, index) => (
+        <SongCard key={index} song={song} />
+      ))}
     </div>
   );
 }

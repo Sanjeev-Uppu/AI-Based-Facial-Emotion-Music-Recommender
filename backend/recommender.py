@@ -7,4 +7,15 @@ with open(DATA_PATH, "r") as f:
     SONGS = json.load(f)
 
 def recommend_songs(emotion: str):
-    return SONGS.get(emotion.lower(), [])
+    emotion = emotion.lower()
+
+    # Normalize face-api emotions to JSON keys
+    EMOTION_MAP = {
+        "surprised": "surprise",
+        "fearful": "sad",
+        "disgusted": "angry"
+    }
+
+    normalized_emotion = EMOTION_MAP.get(emotion, emotion)
+
+    return SONGS.get(normalized_emotion, [])

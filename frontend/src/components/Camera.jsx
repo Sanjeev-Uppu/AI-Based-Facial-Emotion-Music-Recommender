@@ -1,68 +1,59 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as faceapi from "face-api.js";
 
 export default function Camera({ onEmotion }) {
   const videoRef = useRef(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let intervalId;
+    let videoEl;
 
     const start = async () => {
-      try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
-        await faceapi.nets.faceExpressionNet.loadFromUri("/models");
+      await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
+      await faceapi.nets.faceExpressionNet.loadFromUri("/models");
 
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoRef.current.srcObject = stream;
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
-        setLoading(false);
+      videoEl = videoRef.current;
+      if (!videoEl) return;
 
-        intervalId = setInterval(async () => {
-          if (!videoRef.current) return;
+      videoEl.srcObject = stream;
 
-          const result = await faceapi
-            .detectSingleFace(
-              videoRef.current,
-              new faceapi.TinyFaceDetectorOptions()
-            )
-            .withFaceExpressions();
+      intervalId = setInterval(async () => {
+        const result = await faceapi
+          .detectSingleFace(
+            videoEl,
+            new faceapi.TinyFaceDetectorOptions()
+          )
+          .withFaceExpressions();
 
-          if (result?.expressions) {
-            const emotion = Object.keys(result.expressions).reduce((a, b) =>
-              result.expressions[a] > result.expressions[b] ? a : b
-            );
-            onEmotion(emotion);
-          }
-        }, 2000);
-      } catch (err) {
-        console.error("Camera error:", err);
-      }
+        if (result?.expressions) {
+          const emotion = Object.entries(result.expressions).reduce(
+            (a, b) => (a[1] > b[1] ? a : b)
+          )[0];
+          onEmotion(emotion);
+        }
+      }, 2000);
     };
 
     start();
 
     return () => {
       clearInterval(intervalId);
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+      if (videoEl?.srcObject) {
+        videoEl.srcObject.getTracks().forEach(track => track.stop());
       }
     };
   }, [onEmotion]);
 
   return (
-    <div className="camera-wrapper">
-      {loading && <div className="camera-loader">Scanning face…</div>}
-
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        className="camera-video"
-      />
-
-      <div className="scan-frame"></div>
-    </div>
+    <video
+      ref={videoRef}
+      autoPlay
+      muted
+      playsInline
+      width="320"
+      style={{ borderRadius: "12px" }}
+    />
   );
 }
